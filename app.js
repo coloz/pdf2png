@@ -1,14 +1,18 @@
 const poppler = require('pdf-poppler');
 const path = require('path');
 const sharp = require('sharp');
+const express = require('express');
+const app = express();
+const port = 3000;
 
 async function convertPdfToPng(pdfPath, outputDir, resolution = 300) {
+    
     const options = {
         format: 'png',
         out_dir: outputDir,
         out_prefix: path.basename(pdfPath, path.extname(pdfPath)),
         page: null,  // null表示转换所有页面
-        scale: resolution / 72  // 72是默认的DPI，将其提高到300 DPI
+        scale: resolution
     };
 
     try {
@@ -24,7 +28,25 @@ async function convertPdfToPng(pdfPath, outputDir, resolution = 300) {
     }
 }
 
-// 调用函数，传入PDF文件路径和输出目录路径
-const pdfPath = './model.pdf';  // 替换为你的PDF文件路径
-const outputDir = './';  // 替换为你想要放置PNG图片的输出目录路径
-convertPdfToPng(pdfPath, outputDir, 300);
+// 解析JSON请求体
+app.use(express.json());
+
+// 定义API路由
+app.post('/convert', async (req, res) => {
+    try {
+        const { pdfPath } = req.body;
+        if (!pdfPath) {
+            return res.status(400).send('pdfPath is required');
+        }
+
+        const result = await convertPdfToPng(pdfPath);
+        res.json({ success: true, result });
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+
+// 启动服务器
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
